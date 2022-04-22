@@ -98,6 +98,16 @@ func DecodeRecordKey(key kv.Key) (tableID int64, handle int64, err error) {
 	 *   5. understanding the coding rules is a prerequisite for implementing this function,
 	 *      you can learn it in the projection 1-2 course documentation.
 	 */
+	if len(key) != RecordRowKeyLen {
+		return 0, 0, errInvalidRecordKey
+	}
+	var isRecord bool
+	if tableID, _, isRecord, err = DecodeKeyHead(key); !isRecord || err != nil {
+		err = errInvalidKey.GenWithStack("invalid key - %q", key)
+		return
+	}
+	handle, err = DecodeRowKey(key)
+	return
 	return
 }
 
@@ -148,6 +158,12 @@ func DecodeIndexKeyPrefix(key kv.Key) (tableID int64, indexID int64, indexValues
 	 *   5. understanding the coding rules is a prerequisite for implementing this function,
 	 *      you can learn it in the projection 1-2 course documentation.
 	 */
+	var isRecord bool
+	if tableID, indexID, isRecord, err = DecodeKeyHead(key); isRecord || err != nil {
+		err = errInvalidKey.GenWithStack("invalid key - %q", key)
+		return
+	}
+	indexValues = CutIndexPrefix(key)
 	return tableID, indexID, indexValues, nil
 }
 
